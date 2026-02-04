@@ -1,25 +1,48 @@
-var builder = WebApplication.CreateBuilder(args);
+﻿using Serilog;
+using TaskManagementAPI.Middleware;
 
-// Add services to the container.
+// ─── Serilog Bootstrap Logger (before DI is built) ──────────────────────────
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+try
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    var builder = WebApplication.CreateBuilder(args);
+
+    // ─── Serilog (full) ──────────────────────────────────────────────────────
+    builder.Host.UseSerilog((ctx, services, loggerConfiguration) =>
+    {
+        loggerConfiguration
+            .ReadFrom.Configuration(ctx.Configuration)
+            .ReadFrom.Services(services)
+            .Enrich.FromLogContext()
+            .WriteTo.Console()
+            .WriteTo.File("logs/app-.txt", rollingInterval: RollingInterval.Day);
+    });
+
+    
+    builder.Services.AddControllers();
+
+    var app = builder.Build();
+
+    // ─── Middleware Pipeline ─────────────────────────────────────────────────
+    app.UseSerilogRequestLogging();
+    app.UseGlobalExceptionHandler();       // Custom error handler
+    app.UseHttpsRedirection();
+        
+
+    app.MapControllers();
+
+
+    app.Run();
 }
-
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application startup failed.");
+    return;
+}
+finally
+{
+    Log.CloseAndFlush();
+}
