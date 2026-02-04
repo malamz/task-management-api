@@ -1,5 +1,8 @@
-﻿using Serilog;
+﻿using TaskManagementAPI.Data;
+using TaskManagementAPI.Configuration;
+using Serilog;
 using TaskManagementAPI.Middleware;
+using Microsoft.EntityFrameworkCore;
 
 // ─── Serilog Bootstrap Logger (before DI is built) ──────────────────────────
 Log.Logger = new LoggerConfiguration()
@@ -21,7 +24,21 @@ try
             .WriteTo.File("logs/app-.txt", rollingInterval: RollingInterval.Day);
     });
 
+    // ─── Configuration ───────────────────────────────────────────────────────
     
+    builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("Database"));
+
+    // ─── Database ────────────────────────────────────────────────────────────
+    builder.Services.AddDbContext<AppDbContext>(options =>
+    {
+        var dbSettings = builder.Configuration.GetSection("Database").Get<DatabaseSettings>()!;
+        if (dbSettings.UsePostgres)
+            options.UseNpgsql(dbSettings.ConnectionString);
+        else
+            options.UseSqlServer(dbSettings.ConnectionString);
+    });
+
+
     builder.Services.AddControllers();
 
     var app = builder.Build();
@@ -34,6 +51,13 @@ try
 
     app.MapControllers();
 
+    // ─── Auto-Migrate on startup ─────────────────────────────────────────────
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await dbContext.Database.MigrateAsync();
+        await DbSeeder.SeedAsync(dbContext); // seeds a default Admin user
+    }
 
     app.Run();
 }
