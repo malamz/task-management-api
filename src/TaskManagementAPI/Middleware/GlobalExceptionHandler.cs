@@ -18,7 +18,7 @@ public class GlobalExceptionHandlerMiddleware
         _next = next;
     }
 
-    public async Task InvokeAsync(HttpContext context, RequestDelegate next)
+    public async Task InvokeAsync(HttpContext context)
     {
         try
         {

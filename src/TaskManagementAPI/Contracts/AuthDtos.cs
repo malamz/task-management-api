@@ -37,14 +37,3 @@ public class AuthResponse
     public string Role { get; set; } = "";
     public DateTime ExpiresAt { get; set; }
 }
-
-
-// ─── Shared ──────────────────────────────────────────────────────────────────
-
-/// <summary>Generic API envelope returned on errors.</summary>
-public class ErrorResponse
-{
-    public int StatusCode { get; set; }
-    public string Message { get; set; } = "";
-    public IEnumerable<string>? Errors { get; set; }
-}

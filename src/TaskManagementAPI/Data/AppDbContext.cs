@@ -28,7 +28,7 @@ public class AppDbContext : DbContext
             entity.Property(u => u.PasswordHash).IsRequired();
             entity.Property(u => u.Name).IsRequired().HasMaxLength(100);
             entity.Property(u => u.Role).HasConversion<string>(); // store as "User"/"Admin"
-            entity.Property(u => u.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(u => u.CreatedAt).HasDefaultValueSql("now()");
         });
 
         // ── Task ─────────────────────────────────────────────────────────────
@@ -40,8 +40,8 @@ public class AppDbContext : DbContext
             entity.Property(t => t.Description).HasMaxLength(2000);
             entity.Property(t => t.Status).HasConversion<string>();
             entity.Property(t => t.Priority).HasConversion<string>();
-            entity.Property(t => t.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
-            entity.Property(t => t.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(t => t.CreatedAt).HasDefaultValueSql("now()");
+            entity.Property(t => t.UpdatedAt).HasDefaultValueSql("now()");
 
             // FK relationship: Task.AssignedUserId → User.Id
             entity.HasOne(t => t.AssignedUser)

@@ -25,13 +25,18 @@ try
             .ReadFrom.Configuration(ctx.Configuration)
             .ReadFrom.Services(services)
             .Enrich.FromLogContext()
+            
             .WriteTo.Console()
-            .WriteTo.File("logs/app-.txt", rollingInterval: RollingInterval.Day);
+            .WriteTo.Async(a => a.File("logs/app-.txt",
+                rollingInterval: RollingInterval.Day,
+                buffered: true, // Buffers writes for speed
+                flushToDiskInterval: TimeSpan.FromSeconds(1))); // Flushes every second            
+            //.WriteTo.File("logs/app-.txt", rollingInterval: RollingInterval.Day);
     });
 
-    // ─── Configuration ───────────────────────────────────────────────────────
-    
+    // ─── Configuration ───────────────────────────────────────────────────────    
     builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("Database"));
+    builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 
     // ─── Database ────────────────────────────────────────────────────────────
     builder.Services.AddDbContext<AppDbContext>(options =>
@@ -66,12 +71,12 @@ try
 
     // ─── Repositories ────────────────────────────────────────────────────────
     builder.Services.AddScoped<IUserRepository, UserRepository>();
-    
+    builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 
     // ─── Services ────────────────────────────────────────────────────────────
     builder.Services.AddScoped<IAuthService, AuthService>();    
     builder.Services.AddScoped<ITokenService, TokenService>();
-
+    builder.Services.AddScoped<ITaskService, TaskService>();
 
     builder.Services.AddControllers();
 
@@ -88,13 +93,13 @@ try
 
     app.MapControllers();
 
-    // ─── Auto-Migrate on startup ─────────────────────────────────────────────
-    using (var scope = app.Services.CreateScope())
-    {
-        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await dbContext.Database.MigrateAsync();
-        await DbSeeder.SeedAsync(dbContext); // seeds a default Admin user
-    }
+    //// ─── Auto-Migrate on startup ─────────────────────────────────────────────
+    //using (var scope = app.Services.CreateScope())
+    //{
+    //    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    //    await dbContext.Database.MigrateAsync();
+    //    await DbSeeder.SeedAsync(dbContext); // seeds a default Admin user
+    //}
 
     app.Run();
 }
