@@ -27,8 +27,11 @@ public class AppDbContext : DbContext
             entity.HasIndex(u => u.Email).IsUnique();
             entity.Property(u => u.PasswordHash).IsRequired();
             entity.Property(u => u.Name).IsRequired().HasMaxLength(100);
-            entity.Property(u => u.Role).HasConversion<string>(); // store as "User"/"Admin"
+            entity.Property(u => u.Role).HasConversion<string>(); // store as "User"/"Admin"            
             entity.Property(u => u.CreatedAt).HasDefaultValueSql("now()");
+            // Note:
+            // .HasDefaultValueSql("now()"); for postgresql 
+            // .HasDefaultValueSql("GETUTCDATE()"); for sqlserver
         });
 
         // ── Task ─────────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using TaskManagementAPI.Contracts;
 using TaskManagementAPI.Interfaces;
 
@@ -12,7 +13,7 @@ namespace TaskManagementAPI.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]                                          // entire controller needs auth
-
+[EnableRateLimiting("GlobalPolicy")]
 [Produces("application/json")]
 public class TasksController : ControllerBase
 {

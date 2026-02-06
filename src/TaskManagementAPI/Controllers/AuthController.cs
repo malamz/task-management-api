@@ -30,7 +30,7 @@ public class AuthController : ControllerBase
     /// <response code="400">Validation failed.</response>
     /// <response code="409">Email already registered.</response>
     [HttpPost("register")]
-    
+    [EnableRateLimiting("AuthPolicy")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status409Conflict)]
@@ -48,7 +48,7 @@ public class AuthController : ControllerBase
     /// <response code="200">Login successful – token returned.</response>
     /// <response code="401">Invalid credentials.</response>
     [HttpPost("login")]
-    
+    [EnableRateLimiting("AuthPolicy")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request)

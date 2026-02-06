@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using TaskManagementAPI.Interfaces;
 using TaskManagementAPI.Repositories;
 using TaskManagementAPI.Services;
+using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.RateLimiting;
 
 // ─── Serilog Bootstrap Logger (before DI is built) ──────────────────────────
 Log.Logger = new LoggerConfiguration()
@@ -78,6 +80,67 @@ try
     builder.Services.AddScoped<ITokenService, TokenService>();
     builder.Services.AddScoped<ITaskService, TaskService>();
 
+    // ─── Rate Limiting ───────────────────────────────────────────────────────
+    builder.Services.AddRateLimiter(rateLimiterOptions =>
+    {
+        rateLimiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        rateLimiterOptions.AddFixedWindowLimiter("AuthPolicy", options =>
+        {
+            options.Window = TimeSpan.FromMinutes(1);
+            options.PermitLimit = 10;
+        });
+        rateLimiterOptions.AddFixedWindowLimiter("GlobalPolicy", options =>
+        {
+            options.Window = TimeSpan.FromMinutes(1);
+            options.PermitLimit = 60;
+        });
+    });
+
+    // ─── CORS ────────────────────────────────────────────────────────────────
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowSpecificOrigins", policy =>
+        {
+            var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+            policy.WithOrigins(origins)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+    });
+
+    // ─── Swagger ─────────────────────────────────────────────────────────────
+    builder.Services.AddSwaggerGen(options =>
+    {
+        options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+        {
+            Title = "Task Management API",
+            Version = "v1",
+            Description = "A production-ready REST API for task management with JWT authentication and role-based authorization.",
+            Contact = new Microsoft.OpenApi.Models.OpenApiContact { Name = "Developer", Email = "dev@example.com" }
+        });
+
+        // Swagger JWT bearer token support
+        options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+        {
+            In = ParameterLocation.Header,
+            Description = "Enter your JWT token in the field below.\r\n\r\nExample: \"Bearer eyJhbGci...\"",
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "Bearer",
+            BearerFormat = "JWT"
+        });
+
+        options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+        {
+            { new Microsoft.OpenApi.Models.OpenApiSecurityScheme { Reference = new Microsoft.OpenApi.Models.OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } }, Array.Empty<string>() }
+        });
+
+        // Include XML documentation
+        var xmlFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml");
+        if (File.Exists(xmlFile))
+            options.IncludeXmlComments(xmlFile);
+    });
+
     builder.Services.AddControllers();
 
     var app = builder.Build();
@@ -86,20 +149,31 @@ try
     app.UseSerilogRequestLogging();
     app.UseGlobalExceptionHandler();       // Custom error handler
     app.UseHttpsRedirection();
-
+    app.UseCors("AllowSpecificOrigins");
+    app.UseRateLimiter();
     app.UseAuthentication();
     app.UseAuthorization();
 
+    // ─── Swagger (dev only by default – remove env check to always expose) ──
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI(options =>
+        {
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "Task Management API v1");
+            options.RoutePrefix = "swagger";
+        });
+    }
 
     app.MapControllers();
 
-    //// ─── Auto-Migrate on startup ─────────────────────────────────────────────
-    //using (var scope = app.Services.CreateScope())
-    //{
-    //    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    //    await dbContext.Database.MigrateAsync();
-    //    await DbSeeder.SeedAsync(dbContext); // seeds a default Admin user
-    //}
+    // ─── Auto-Migrate on startup ─────────────────────────────────────────────
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await dbContext.Database.MigrateAsync();
+        await DbSeeder.SeedAsync(dbContext); // seeds a default Admin user
+    }
 
     app.Run();
 }
