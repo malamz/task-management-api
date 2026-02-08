@@ -115,15 +115,14 @@ try
         {
             Title = "Task Management API",
             Version = "v1",
-            Description = "A production-ready REST API for task management with JWT authentication and role-based authorization.",
-            Contact = new Microsoft.OpenApi.Models.OpenApiContact { Name = "Developer", Email = "dev@example.com" }
+            Description = "A production-ready REST API for task management with JWT authentication and role-based authorization."
         });
 
         // Swagger JWT bearer token support
         options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
         {
             In = ParameterLocation.Header,
-            Description = "Enter your JWT token in the field below.\r\n\r\nExample: \"Bearer eyJhbGci...\"",
+            Description = "Enter your JWT token in the field below.\r\n\r\nExample: \"eyJhbGci...\"",
             Name = "Authorization",
             Type = SecuritySchemeType.Http,
             Scheme = "Bearer",

@@ -15,6 +15,7 @@ namespace TaskManagementAPI.Controllers;
 [Authorize]                                          // entire controller needs auth
 [EnableRateLimiting("GlobalPolicy")]
 [Produces("application/json")]
+[ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
 public class TasksController : ControllerBase
 {
     private readonly ITaskService _taskService;
@@ -98,6 +99,7 @@ public class TasksController : ControllerBase
     /// <response code="404">Task not found.</response>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(TaskResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TaskResponse>> UpdateTask(
         [FromRoute] Guid id,

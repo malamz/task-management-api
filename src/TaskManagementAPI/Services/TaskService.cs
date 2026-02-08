@@ -65,7 +65,8 @@ public class TaskService : ITaskService
             Description = request.Description,
             Status = status,
             Priority = priority,
-            DueDate = request.DueDate,
+            //DueDate = request.DueDate,
+            DueDate = request.DueDate.HasValue ? DateTime.SpecifyKind(request.DueDate.Value, DateTimeKind.Utc) : request.DueDate, // Force the "Unspecified" date to be "UTC"
             AssignedUserId = request.AssignedUserId
         };
 
@@ -103,7 +104,9 @@ public class TaskService : ITaskService
         }
 
         if (request.DueDate.HasValue)
-            task.DueDate = request.DueDate;
+            //task.DueDate = request.DueDate;
+            // Force the "Unspecified" date to be "UTC"
+            task.DueDate = DateTime.SpecifyKind(request.DueDate.Value, DateTimeKind.Utc);
 
         if (request.AssignedUserId.HasValue)
         {

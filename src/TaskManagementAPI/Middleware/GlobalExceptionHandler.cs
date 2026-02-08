@@ -39,7 +39,7 @@ public class GlobalExceptionHandlerMiddleware
             KeyNotFoundException        => (HttpStatusCode.NotFound, ex.Message),
             InvalidOperationException   => (HttpStatusCode.Conflict, ex.Message),
             ArgumentException           => (HttpStatusCode.BadRequest, ex.Message),
-            _                           => (HttpStatusCode.InternalServerError, "An unexpected error occurred.")
+            _                           => (HttpStatusCode.InternalServerError, $"An unexpected error occurred. {ex.Message}")
         };
 
         // Log everything; internal errors get the full stack trace
