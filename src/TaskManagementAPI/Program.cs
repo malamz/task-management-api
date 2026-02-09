@@ -177,6 +177,11 @@ try
     }
 
     app.Run();
+    
+}
+catch (HostAbortedException) 
+{
+    throw;
 }
 catch (Exception ex)
 {
