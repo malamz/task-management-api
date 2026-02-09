@@ -29,11 +29,13 @@ try
             .Enrich.FromLogContext()
             
             .WriteTo.Console()
-            .WriteTo.Async(a => a.File("logs/app-.txt",
+            .WriteTo.Async(a => a.File(
+                new Serilog.Formatting.Json.JsonFormatter(),                
+                "logs/app-.json",
                 rollingInterval: RollingInterval.Day,
                 buffered: true, // Buffers writes for speed
                 flushToDiskInterval: TimeSpan.FromSeconds(1))); // Flushes every second            
-            //.WriteTo.File("logs/app-.txt", rollingInterval: RollingInterval.Day);
+            
     });
 
     // ─── Configuration ───────────────────────────────────────────────────────    
